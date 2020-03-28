@@ -14,6 +14,7 @@ class _MyAppState extends State<MyApp> {
   StreamSubscription _intentDataStreamSubscription;
   List<SharedMediaFile> _sharedFiles;
   String _sharedText;
+  SharedTwitterUrl _sharedTwitterUrl;
 
   @override
   void initState() {
@@ -56,6 +57,23 @@ class _MyAppState extends State<MyApp> {
         print("Shared: $_sharedText");
       });
     });
+
+    _intentDataStreamSubscription = ReceiveSharingIntent.getTwitterUrlStream()
+        .listen((SharedTwitterUrl value) {
+      setState(() {
+        _sharedTwitterUrl = value;
+        print("Shared:" + (_sharedTwitterUrl.toString() ?? ""));
+      });
+    }, onError: (err) {
+      print("getIntentDataStream error: $err");
+    });
+
+    ReceiveSharingIntent.getInitialTwitterUrl().then((SharedTwitterUrl value) {
+      setState(() {
+        _sharedTwitterUrl = value;
+        print("Shared:" + (_sharedTwitterUrl.toString() ?? ""));
+      });
+    });
   }
 
   @override
@@ -79,7 +97,9 @@ class _MyAppState extends State<MyApp> {
               Text(_sharedFiles?.map((f) => f.path)?.join(",") ?? ""),
               SizedBox(height: 100),
               Text("Shared urls/text:", style: textStyleBold),
-              Text(_sharedText ?? "")
+              Text(_sharedText ?? ""),
+              Text("Shared twitter url:", style: textStyleBold),
+              Text(_sharedTwitterUrl.toString() ?? "")
             ],
           ),
         ),

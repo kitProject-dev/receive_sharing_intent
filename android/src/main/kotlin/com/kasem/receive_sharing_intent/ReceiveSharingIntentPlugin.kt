@@ -22,7 +22,6 @@ import java.net.URLConnection
 import android.os.Build
 import android.util.Log
 
-
 class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         MethodCallHandler,
         EventChannel.StreamHandler,
@@ -34,8 +33,12 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
     private var initialText: String? = null
     private var latestText: String? = null
 
+    private var initialTwitterUrl: JSONObject? = null
+    private var latestTwitterUrl: JSONObject? = null
+
     private var eventSinkMedia: EventChannel.EventSink? = null
     private var eventSinkText: EventChannel.EventSink? = null
+    private var eventSinkTwitterUrl: EventChannel.EventSink? = null
 
     init {
         handleIntent(registrar.context(), registrar.activity().intent, true)
@@ -45,6 +48,7 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         when (arguments) {
             "media" -> eventSinkMedia = events
             "text" -> eventSinkText = events
+            "twitter_url" -> eventSinkTwitterUrl = events
         }
     }
 
@@ -52,6 +56,7 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         when (arguments) {
             "media" -> eventSinkMedia = null
             "text" -> eventSinkText = null
+            "twitter_url" -> eventSinkTwitterUrl = null
         }
     }
 
@@ -61,9 +66,17 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
     }
 
     companion object {
-        private val MESSAGES_CHANNEL = "receive_sharing_intent/messages"
-        private val EVENTS_CHANNEL_MEDIA = "receive_sharing_intent/events-media"
-        private val EVENTS_CHANNEL_TEXT = "receive_sharing_intent/events-text"
+        private const val MESSAGES_CHANNEL = "receive_sharing_intent/messages"
+        private const val EVENTS_CHANNEL_MEDIA = "receive_sharing_intent/events-media"
+        private const val EVENTS_CHANNEL_TEXT = "receive_sharing_intent/events-text"
+        private const val EVENTS_CHANNEL_TWITTER_URL = "receive_sharing_intent/events-twitter-url"
+
+        private const val TEXT = "text"
+        private const val URL = "url"
+        private const val HASHTAGS = "hashtags"
+        private const val VIA = "via"
+        private const val RELATED = "related"
+        private const val IN_REPLY_TO = "in-reply-to"
 
         @JvmStatic
         fun registerWith(registrar: Registrar) {
@@ -83,6 +96,9 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
             val eChannelText = EventChannel(registrar.messenger(), EVENTS_CHANNEL_TEXT)
             eChannelText.setStreamHandler(instance)
 
+            val eChannelTwitterUrl = EventChannel(registrar.messenger(), EVENTS_CHANNEL_TWITTER_URL)
+            eChannelTwitterUrl.setStreamHandler(instance)
+
             registrar.addNewIntentListener(instance)
         }
     }
@@ -92,11 +108,14 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         when {
             call.method == "getInitialMedia" -> result.success(initialMedia?.toString())
             call.method == "getInitialText" -> result.success(initialText)
+            call.method == "getInitialTwitterUrl" -> result.success(initialTwitterUrl?.toString())
             call.method == "reset" -> {
                 initialMedia = null
                 latestMedia = null
                 initialText = null
                 latestText = null
+                initialTwitterUrl = null
+                latestTwitterUrl = null
                 result.success(null)
             }
             else -> result.notImplemented()
@@ -122,12 +141,32 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
                 eventSinkText?.success(latestText)
             }
             intent.action == Intent.ACTION_VIEW -> { // Opening URL
-                val value = intent.dataString
-                if (initial) initialText = value
-                latestText = value
-                eventSinkText?.success(latestText)
+                val value = getTwitterUrl(intent)
+                if (initial) initialTwitterUrl = value
+                latestTwitterUrl = value
+                eventSinkTwitterUrl?.success(latestTwitterUrl)
             }
         }
+    }
+
+    private fun getTwitterUrl(intent: Intent?): JSONObject? {
+        if (intent == null) return null
+        if (intent.dataString == null) return null
+        val uri = Uri.parse(intent.dataString)
+        val text = uri.getQueryParameter("text") ?: ""
+        val url = uri.getQueryParameter("url") ?: ""
+        val hashtags = uri.getQueryParameter("hashtags") ?: ""
+        val via = uri.getQueryParameter("via") ?: ""
+        val related = uri.getQueryParameter("related") ?: ""
+        val inReplyTo = uri.getQueryParameter("in-reply-to") ?: ""
+
+        return JSONObject()
+                .put(TEXT, text)
+                .put(URL, url)
+                .put(HASHTAGS, hashtags)
+                .put(VIA, via)
+                .put(RELATED, related)
+                .put(IN_REPLY_TO, inReplyTo)
     }
 
     private fun getMediaUris(context: Context, intent: Intent?): JSONArray? {

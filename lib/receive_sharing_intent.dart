@@ -11,9 +11,12 @@ class ReceiveSharingIntent {
       const EventChannel("receive_sharing_intent/events-media");
   static const EventChannel _eChannelLink =
       const EventChannel("receive_sharing_intent/events-text");
+  static const EventChannel _eChannelTwitterUrl =
+      const EventChannel("receive_sharing_intent/events-twitter-url");
 
   static Stream<List<SharedMediaFile>> _streamMedia;
   static Stream<String> _streamLink;
+  static Stream<SharedTwitterUrl> _streamTwitterUrl;
 
   /// Returns a [Future], which completes to one of the following:
   ///
@@ -48,6 +51,12 @@ class ReceiveSharingIntent {
     final String data = await getInitialText();
     if (data == null) return null;
     return Uri.parse(data);
+  }
+
+  static Future<SharedTwitterUrl> getInitialTwitterUrl() async {
+    final String json = await _mChannel.invokeMethod('getInitialTwitterUrl');
+    if (json == null) return null;
+    return SharedTwitterUrl.fromJson(jsonDecode(json));
   }
 
   /// Sets up a broadcast stream for receiving incoming media share change events.
@@ -135,6 +144,26 @@ class ReceiveSharingIntent {
     );
   }
 
+  static Stream<SharedTwitterUrl> getTwitterUrlStream() {
+    if (_streamTwitterUrl == null) {
+      final stream = _eChannelTwitterUrl
+          .receiveBroadcastStream("twitter_url")
+          .cast<String>();
+      _streamTwitterUrl = stream.transform<SharedTwitterUrl>(
+        new StreamTransformer<String, SharedTwitterUrl>.fromHandlers(
+          handleData: (String data, EventSink<SharedTwitterUrl> sink) {
+            if (data == null) {
+              sink.add(null);
+            } else {
+              sink.add(SharedTwitterUrl.fromJson(jsonDecode(data)));
+            }
+          },
+        ),
+      );
+    }
+    return _streamTwitterUrl;
+  }
+
   /// Call this method if you already consumed the callback
   /// and don't want the same callback again
   static void reset() {
@@ -166,3 +195,31 @@ class SharedMediaFile {
 }
 
 enum SharedMediaType { IMAGE, VIDEO }
+
+class SharedTwitterUrl {
+  final String text;
+  final String url;
+  final String hashtags;
+  final String via;
+  final String related;
+  final String inReplyTo;
+
+  SharedTwitterUrl(this.text, this.url, this.hashtags, this.via, this.related,
+      this.inReplyTo);
+
+  SharedTwitterUrl.fromJson(Map<String, dynamic> json)
+      : text = json['text'],
+        url = json['url'],
+        hashtags = json['hashtags'],
+        via = json['via'],
+        related = json['related'],
+        inReplyTo = json['in-reply-to'];
+
+  @override
+  String toString() => "text:$text\n"
+      "url:$url\n"
+      "hashtags:$hashtags\n"
+      "via:$via\n"
+      "related:$related\n"
+      "inReplyTo:$inReplyTo\n";
+}
