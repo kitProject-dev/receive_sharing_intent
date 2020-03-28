@@ -135,7 +135,13 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
             }
             (intent.type == null || intent.type?.startsWith("text") == true)
                     && intent.action == Intent.ACTION_SEND -> { // Sharing text
-                val value = intent.getStringExtra(Intent.EXTRA_TEXT)
+                val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT)
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
+                var value = ""
+                if (subject != null) {
+                    value += "$subject "
+                }
+                value += text
                 if (initial) initialText = value
                 latestText = value
                 eventSinkText?.success(latestText)
