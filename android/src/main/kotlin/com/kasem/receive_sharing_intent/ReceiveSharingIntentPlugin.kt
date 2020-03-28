@@ -34,8 +34,16 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
     private var initialText: String? = null
     private var latestText: String? = null
 
+    private var initialTwicca: JSONObject? = null
+    private var latestTwicca: JSONObject? = null
+
+    private var initialTxiicha: JSONObject? = null
+    private var latestTxiicha: JSONObject? = null
+
     private var eventSinkMedia: EventChannel.EventSink? = null
     private var eventSinkText: EventChannel.EventSink? = null
+    private var eventSinkTwicca: EventChannel.EventSink? = null
+    private var eventSinkTxiicha: EventChannel.EventSink? = null
 
     init {
         handleIntent(registrar.context(), registrar.activity().intent, true)
@@ -45,6 +53,8 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         when (arguments) {
             "media" -> eventSinkMedia = events
             "text" -> eventSinkText = events
+            "twicca" -> eventSinkTwicca = events
+            "txiicha" -> eventSinkTxiicha = events
         }
     }
 
@@ -52,6 +62,8 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         when (arguments) {
             "media" -> eventSinkMedia = null
             "text" -> eventSinkText = null
+            "twicca" -> eventSinkTwicca = null
+            "txiicha" -> eventSinkTxiicha = null
         }
     }
 
@@ -61,9 +73,26 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
     }
 
     companion object {
-        private val MESSAGES_CHANNEL = "receive_sharing_intent/messages"
-        private val EVENTS_CHANNEL_MEDIA = "receive_sharing_intent/events-media"
-        private val EVENTS_CHANNEL_TEXT = "receive_sharing_intent/events-text"
+        private const val MESSAGES_CHANNEL = "receive_sharing_intent/messages"
+        private const val EVENTS_CHANNEL_MEDIA = "receive_sharing_intent/events-media"
+        private const val EVENTS_CHANNEL_TEXT = "receive_sharing_intent/events-text"
+        private const val EVENTS_CHANNEL_TWICCA = "receive_sharing_intent/events-twicca"
+        private const val EVENTS_CHANNEL_TXIICHA = "receive_sharing_intent/events-txiicha"
+
+        private const val ID = "id"
+        private const val TEXT = "text"
+        private const val LATITUDE = "latitude"
+        private const val LONGITUDE = "longitude"
+        private const val CREATED_AT = "created_at"
+        private const val SOURCE = "source"
+        private const val IN_REPLY_TO_STATUS_ID = "in_reply_to_status_id"
+        private const val USER_SCREEN_NAME = "user_screen_name"
+        private const val USER_NAME = "user_name"
+        private const val USER_ID = "user_id"
+        private const val USER_PROFILE_IMAGE_URL = "user_profile_image_url"
+        private const val USER_PROFILE_IMAGE_URL_MINI = "user_profile_image_url_mini"
+        private const val USER_PROFILE_IMAGE_URL_NORMAL = "user_profile_image_url_normal"
+        private const val USER_PROFILE_IMAGE_URL_BIGGER = "user_profile_image_url_bigger"
 
         @JvmStatic
         fun registerWith(registrar: Registrar) {
@@ -83,6 +112,12 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
             val eChannelText = EventChannel(registrar.messenger(), EVENTS_CHANNEL_TEXT)
             eChannelText.setStreamHandler(instance)
 
+            val eChannelTwicca = EventChannel(registrar.messenger(), EVENTS_CHANNEL_TWICCA)
+            eChannelTwicca.setStreamHandler(instance)
+
+            val eChannelTxiicha = EventChannel(registrar.messenger(), EVENTS_CHANNEL_TXIICHA)
+            eChannelTxiicha.setStreamHandler(instance)
+
             registrar.addNewIntentListener(instance)
         }
     }
@@ -92,11 +127,17 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
         when {
             call.method == "getInitialMedia" -> result.success(initialMedia?.toString())
             call.method == "getInitialText" -> result.success(initialText)
+            call.method == "getInitialTwicca" -> result.success(initialTwicca?.toString())
+            call.method == "getInitialTxiicha" -> result.success(initialTxiicha?.toString())
             call.method == "reset" -> {
                 initialMedia = null
                 latestMedia = null
                 initialText = null
                 latestText = null
+                initialTwicca = null
+                latestTwicca = null
+                initialTxiicha = null
+                latestTxiicha = null
                 result.success(null)
             }
             else -> result.notImplemented()
@@ -127,7 +168,83 @@ class ReceiveSharingIntentPlugin(val registrar: Registrar) :
                 latestText = value
                 eventSinkText?.success(latestText)
             }
+            intent.action == "jp.r246.twicca.ACTION_SHOW_TWEET" -> { // Opening URL
+                val value = getTwicca(intent)
+                if (initial) initialTwicca = value
+                latestTwicca = value
+                eventSinkTwicca?.success(latestTwicca?.toString())
+            }
+            intent.action == "net.sinproject.android.txiicha.ACTION_SHOW_TWEET" -> { // Opening URL
+                val value = getTxiicha(intent)
+                if (initial) initialTxiicha = value
+                latestTxiicha = value
+                eventSinkTxiicha?.success(latestTxiicha?.toString())
+            }
         }
+    }
+
+    private fun getTwicca(intent: Intent?): JSONObject? {
+        if (intent == null) return null
+
+        val id = intent.getStringExtra(ID)
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+        val latitude = intent.getStringExtra(LATITUDE)
+        val longitude = intent.getStringExtra(LONGITUDE)
+        val createdAt = intent.getStringExtra(CREATED_AT)
+        val source = intent.getStringExtra(SOURCE)
+        val inReplyToStatusId = intent.getStringExtra(IN_REPLY_TO_STATUS_ID)
+        val userScreenName = intent.getStringExtra(USER_SCREEN_NAME)
+        val userName = intent.getStringExtra(USER_NAME)
+        val userId = intent.getStringExtra(USER_ID)
+        val userProfileImageUrl = intent.getStringExtra(USER_PROFILE_IMAGE_URL)
+        val userProfileImageUrlMini = intent.getStringExtra(USER_PROFILE_IMAGE_URL_MINI)
+        val userProfileImageUrlNormal = intent.getStringExtra(USER_PROFILE_IMAGE_URL_NORMAL)
+        val userProfileImageUrlBigger = intent.getStringExtra(USER_PROFILE_IMAGE_URL_BIGGER)
+        return JSONObject()
+                .put(ID, id)
+                .put(TEXT, text)
+                .put(LATITUDE, latitude)
+                .put(LONGITUDE, longitude)
+                .put(CREATED_AT, createdAt)
+                .put(SOURCE, source)
+                .put(IN_REPLY_TO_STATUS_ID, inReplyToStatusId)
+                .put(USER_SCREEN_NAME, userScreenName)
+                .put(USER_NAME, userName)
+                .put(USER_ID, userId)
+                .put(USER_PROFILE_IMAGE_URL, userProfileImageUrl)
+                .put(USER_PROFILE_IMAGE_URL_MINI, userProfileImageUrlMini)
+                .put(USER_PROFILE_IMAGE_URL_NORMAL, userProfileImageUrlNormal)
+                .put(USER_PROFILE_IMAGE_URL_BIGGER, userProfileImageUrlBigger)
+    }
+
+    private fun getTxiicha(intent: Intent?): JSONObject? {
+        if (intent == null) return null
+
+        val id = intent.getStringExtra(ID)
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+        val createdAt = intent.getStringExtra(CREATED_AT)
+        val source = intent.getStringExtra(SOURCE)
+        val inReplyToStatusId = intent.getStringExtra(IN_REPLY_TO_STATUS_ID)
+        val userScreenName = intent.getStringExtra(USER_SCREEN_NAME)
+        val userName = intent.getStringExtra(USER_NAME)
+        val userId = intent.getStringExtra(USER_ID)
+        val userProfileImageUrl = intent.getStringExtra(USER_PROFILE_IMAGE_URL)
+        val userProfileImageUrlMini = intent.getStringExtra(USER_PROFILE_IMAGE_URL_MINI)
+        val userProfileImageUrlNormal = intent.getStringExtra(USER_PROFILE_IMAGE_URL_NORMAL)
+        val userProfileImageUrlBigger = intent.getStringExtra(USER_PROFILE_IMAGE_URL_BIGGER)
+        return JSONObject()
+                .put(ID, id)
+                .put(TEXT, text)
+                .put(CREATED_AT, createdAt)
+                .put(SOURCE, source)
+                .put(IN_REPLY_TO_STATUS_ID, inReplyToStatusId)
+                .put(USER_SCREEN_NAME, userScreenName)
+                .put(USER_NAME, userName)
+                .put(USER_ID, userId)
+                .put(USER_PROFILE_IMAGE_URL, userProfileImageUrl)
+                .put(USER_PROFILE_IMAGE_URL_MINI, userProfileImageUrlMini)
+                .put(USER_PROFILE_IMAGE_URL_NORMAL, userProfileImageUrlNormal)
+                .put(USER_PROFILE_IMAGE_URL_BIGGER, userProfileImageUrlBigger)
     }
 
     private fun getMediaUris(context: Context, intent: Intent?): JSONArray? {

@@ -14,6 +14,8 @@ class _MyAppState extends State<MyApp> {
   StreamSubscription _intentDataStreamSubscription;
   List<SharedMediaFile> _sharedFiles;
   String _sharedText;
+  SharedTwicca _sharedTwicca;
+  SharedTxiicha _sharedTxiicha;
 
   @override
   void initState() {
@@ -56,6 +58,40 @@ class _MyAppState extends State<MyApp> {
         print("Shared: $_sharedText");
       });
     });
+
+    _intentDataStreamSubscription = ReceiveSharingIntent.getTwiccaStream()
+        .listen((SharedTwicca value) {
+      setState(() {
+        _sharedTwicca = value;
+        print("Shared:" + (_sharedTwicca.toString() ?? ""));
+      });
+    }, onError: (err) {
+      print("getIntentDataStream error: $err");
+    });
+
+    ReceiveSharingIntent.getInitialTwicca().then((SharedTwicca value) {
+      setState(() {
+        _sharedTwicca = value;
+        print("Shared:" + (_sharedTwicca.toString() ?? ""));
+      });
+    });
+
+    _intentDataStreamSubscription = ReceiveSharingIntent.getTxiichaStream()
+        .listen((SharedTxiicha value) {
+      setState(() {
+        _sharedTxiicha = value;
+        print("Shared:" + (_sharedTxiicha.toString() ?? ""));
+      });
+    }, onError: (err) {
+      print("getIntentDataStream error: $err");
+    });
+
+    ReceiveSharingIntent.getInitialTxiicha().then((SharedTxiicha value) {
+      setState(() {
+        _sharedTxiicha = value;
+        print("Shared:" + (_sharedTxiicha.toString() ?? ""));
+      });
+    });
   }
 
   @override
@@ -79,7 +115,11 @@ class _MyAppState extends State<MyApp> {
               Text(_sharedFiles?.map((f) => f.path)?.join(",") ?? ""),
               SizedBox(height: 100),
               Text("Shared urls/text:", style: textStyleBold),
-              Text(_sharedText ?? "")
+              Text(_sharedText ?? ""),
+              Text("Shared Twicca:", style: textStyleBold),
+              Text(_sharedTwicca.toString() ?? ""),
+              Text("Shared Txiicha:", style: textStyleBold),
+              Text(_sharedTxiicha.toString() ?? "")
             ],
           ),
         ),

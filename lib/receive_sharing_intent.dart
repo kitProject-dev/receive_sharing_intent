@@ -11,9 +11,15 @@ class ReceiveSharingIntent {
       const EventChannel("receive_sharing_intent/events-media");
   static const EventChannel _eChannelLink =
       const EventChannel("receive_sharing_intent/events-text");
+  static const EventChannel _eChannelTwicca =
+      const EventChannel("receive_sharing_intent/events-twicca");
+  static const EventChannel _eChannelTxiicha =
+      const EventChannel("receive_sharing_intent/events-txiicha");
 
   static Stream<List<SharedMediaFile>> _streamMedia;
   static Stream<String> _streamLink;
+  static Stream<SharedTwicca> _streamTwicca;
+  static Stream<SharedTxiicha> _streamTxiicha;
 
   /// Returns a [Future], which completes to one of the following:
   ///
@@ -48,6 +54,18 @@ class ReceiveSharingIntent {
     final String data = await getInitialText();
     if (data == null) return null;
     return Uri.parse(data);
+  }
+
+  static Future<SharedTwicca> getInitialTwicca() async {
+    final String json = await _mChannel.invokeMethod('getInitialTwicca');
+    if (json == null) return null;
+    return SharedTwicca.fromJson(jsonDecode(json));
+  }
+
+  static Future<SharedTxiicha> getInitialTxiicha() async {
+    final String json = await _mChannel.invokeMethod('getInitialTxiicha');
+    if (json == null) return null;
+    return SharedTxiicha.fromJson(jsonDecode(json));
   }
 
   /// Sets up a broadcast stream for receiving incoming media share change events.
@@ -135,6 +153,44 @@ class ReceiveSharingIntent {
     );
   }
 
+  static Stream<SharedTwicca> getTwiccaStream() {
+    if (_streamTwicca == null) {
+      final stream =
+          _eChannelTwicca.receiveBroadcastStream("twicca").cast<String>();
+      _streamTwicca = stream.transform<SharedTwicca>(
+        new StreamTransformer<String, SharedTwicca>.fromHandlers(
+          handleData: (String data, EventSink<SharedTwicca> sink) {
+            if (data == null) {
+              sink.add(null);
+            } else {
+              sink.add(SharedTwicca.fromJson(jsonDecode(data)));
+            }
+          },
+        ),
+      );
+    }
+    return _streamTwicca;
+  }
+
+  static Stream<SharedTxiicha> getTxiichaStream() {
+    if (_streamTxiicha == null) {
+      final stream =
+          _eChannelTxiicha.receiveBroadcastStream("txiicha").cast<String>();
+      _streamTxiicha = stream.transform<SharedTxiicha>(
+        new StreamTransformer<String, SharedTxiicha>.fromHandlers(
+          handleData: (String data, EventSink<SharedTxiicha> sink) {
+            if (data == null) {
+              sink.add(null);
+            } else {
+              sink.add(SharedTxiicha.fromJson(jsonDecode(data)));
+            }
+          },
+        ),
+      );
+    }
+    return _streamTxiicha;
+  }
+
   /// Call this method if you already consumed the callback
   /// and don't want the same callback again
   static void reset() {
@@ -166,3 +222,127 @@ class SharedMediaFile {
 }
 
 enum SharedMediaType { IMAGE, VIDEO }
+
+class SharedTwicca {
+  final String id;
+  final String text;
+  final String latitude;
+  final String longitude;
+  final String createdAt;
+  final String source;
+  final String inReplyToStatusId;
+  final String userScreenName;
+  final String userName;
+  final String userId;
+  final String userProfileImageUrl;
+  final String userProfileImageUrlMini;
+  final String userProfileImageUrlNormal;
+  final String userProfileImageUrlBigger;
+
+  SharedTwicca(
+      this.id,
+      this.text,
+      this.latitude,
+      this.longitude,
+      this.createdAt,
+      this.source,
+      this.inReplyToStatusId,
+      this.userScreenName,
+      this.userName,
+      this.userId,
+      this.userProfileImageUrl,
+      this.userProfileImageUrlMini,
+      this.userProfileImageUrlNormal,
+      this.userProfileImageUrlBigger);
+
+  SharedTwicca.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        text = json['text'],
+        latitude = json['latitude'],
+        longitude = json['longitude'],
+        createdAt = json['created_at'],
+        source = json['source'],
+        inReplyToStatusId = json['in_reply_to_status_id'],
+        userScreenName = json['user_screen_name'],
+        userName = json['user_name'],
+        userId = json['user_id'],
+        userProfileImageUrl = json['user_profile_image_url'],
+        userProfileImageUrlMini = json['user_profile_image_url_mini'],
+        userProfileImageUrlNormal = json['user_profile_image_url_normal'],
+        userProfileImageUrlBigger = json['user_profile_image_url_bigger'];
+
+  @override
+  String toString() => "id:$id, "
+      "text:$text\n"
+      "text:$text\n"
+      "latitude:$latitude\n"
+      "longitude:$longitude\n"
+      "createdAt:$createdAt\n"
+      "source:$source\n"
+      "inReplyToStatusId:$inReplyToStatusId\n"
+      "userScreenName:$userScreenName\n"
+      "userName:$userName\n"
+      "userId:$userId\n"
+      "userProfileImageUrl:$userProfileImageUrl\n"
+      "userProfileImageUrlMini:$userProfileImageUrlMini\n"
+      "userProfileImageUrlNormal:$userProfileImageUrlNormal\n"
+      "userProfileImageUrlBigger:$userProfileImageUrlBigger\n";
+}
+
+class SharedTxiicha {
+  final String id;
+  final String text;
+  final String createdAt;
+  final String source;
+  final String inReplyToStatusId;
+  final String userScreenName;
+  final String userName;
+  final String userId;
+  final String userProfileImageUrl;
+  final String userProfileImageUrlMini;
+  final String userProfileImageUrlNormal;
+  final String userProfileImageUrlBigger;
+
+  SharedTxiicha(
+      this.id,
+      this.text,
+      this.createdAt,
+      this.source,
+      this.inReplyToStatusId,
+      this.userScreenName,
+      this.userName,
+      this.userId,
+      this.userProfileImageUrl,
+      this.userProfileImageUrlMini,
+      this.userProfileImageUrlNormal,
+      this.userProfileImageUrlBigger);
+
+  SharedTxiicha.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        text = json['text'],
+        createdAt = json['created_at'],
+        source = json['source'],
+        inReplyToStatusId = json['in_reply_to_status_id'],
+        userScreenName = json['user_screen_name'],
+        userName = json['user_name'],
+        userId = json['user_id'],
+        userProfileImageUrl = json['user_profile_image_url'],
+        userProfileImageUrlMini = json['user_profile_image_url_mini'],
+        userProfileImageUrlNormal = json['user_profile_image_url_normal'],
+        userProfileImageUrlBigger = json['user_profile_image_url_bigger'];
+
+  @override
+  String toString() => "id:$id, "
+      "text:$text\n"
+      "text:$text\n"
+      "createdAt:$createdAt\n"
+      "source:$source\n"
+      "inReplyToStatusId:$inReplyToStatusId\n"
+      "userScreenName:$userScreenName\n"
+      "userName:$userName\n"
+      "userId:$userId\n"
+      "userProfileImageUrl:$userProfileImageUrl\n"
+      "userProfileImageUrlMini:$userProfileImageUrlMini\n"
+      "userProfileImageUrlNormal:$userProfileImageUrlNormal\n"
+      "userProfileImageUrlBigger:$userProfileImageUrlBigger\n";
+}
